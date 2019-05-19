@@ -14,6 +14,7 @@
     conda install jupyterlab
     conda install psycopg2
     conda install pandas
+    conda install git
     pip install ipython-sql
 
 Set the Jupyter environment password.
@@ -30,8 +31,9 @@ Add `export PATH="$PATH:/Library/TeX/texbin"` to `~/.bash_profile`.
 ## Set Up VSCode
 
 VisualStudio Code has the following plug-ins...
-Anaconda
-Python
+Anaconda Extension Pack
+Remote Development
+Bookmarks
 
 
 ## Set Up PostgreSQL
@@ -66,6 +68,17 @@ select count(gender) as total from s_songplay_event;
 ## Run Jupyter Labs
 
 bin/run_jupyter.sh
+
+
+## Amazon EC2 Instance
+
+    sudo yum -y install git
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
+
+Exit shell and ssh into ec2 instance to get clean environment. Ensure that the python version is 3.7.x.
+
+    python --version
 
 
 
