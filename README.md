@@ -9,6 +9,8 @@
 
 ## Set Up Anaconda
 
+Perform git clone of repository first.
+
     conda create --name dend_project_03 python=3.7
     conda activate dend_project_03
     conda install jupyterlab
