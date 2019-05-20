@@ -112,6 +112,7 @@ def load_staging_tables(cur, conn):
 def insert_tables(cur, conn):
     for query in insert_table_queries:
         if query.strip() != "":
+            pprint(query)
             cur.execute(query)
             conn.commit()
 

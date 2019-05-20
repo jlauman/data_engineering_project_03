@@ -83,10 +83,11 @@ Exit shell and ssh into ec2 instance to get clean environment. Ensure that the p
     python --version
 
 
-
 ## Amazon Redshift
 
 https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
+
+https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-multi-row-inserts.html
 
 
 ## Song Data - Dictionary
