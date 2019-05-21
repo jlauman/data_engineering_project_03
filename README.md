@@ -1,15 +1,99 @@
 # Project 3: Data Warehouse
 
-## Copy Jupyter Workspace
+Sparkify, a stream music startup, wants to move user data and song data into the cloud.
+The technology platform for this reporting solution will be Amazon Web Services (AWS).
+There are two sets of data available in an AWS S3 file storage: song files and song-play event records.
 
-    zip -r workspace.zip workspace
-    mv workspace.zip workspace_original.zip
-    mv workspace_original.zip workspace
+The objective of this solutions is to build a song-play reporting data warehouse using
+ETL processes to read files from S3, populate staging tables and then populate fact and
+dimension tables.
+
+To support the anticipated future scale of this reporting solution the AWS RedShift clustered
+database technology has been selected.
+
+
+## Design
+
+
+
+```
++------------+     +------------+     +------------+
+|            |     |            |     |            |
+|            |     |  EC2 VM    |     |  RedShift  |
+| S3 Buckets +---->+  for ETL   +---->+  Database  |
+|            |     |            |     |            |
+|            |     |            |     |            |
++------------+     +------------+     +------------+
+```
+
+
+## Song Record Example
+
+An example song file is shown below. The example is from file `workspace/song_data/A/A/A/TRAAAAK128F9318786.json`.
+There is one JSON object per song file.
+
+```json
+{
+  "artist_id": "AR73AIO1187B9AD57B",
+  "artist_latitude": 37.77916,
+  "artist_location": "San Francisco, CA",
+  "artist_longitude": -122.42005,
+  "artist_name": "Western Addiction",
+  "duration": 118.07302,
+  "num_songs": 1,
+  "song_id": "SOQPWCR12A6D4FB2A3",
+  "title": "A Poor Recipe For Civic Cohesion",
+  "year": 2005
+}
+```
+
+# Song-Play Event Record Example
+
+An exapmle song-play event record is shown below. The example is from file `workspace/log_data/2018/11/2018-11-01-events.json`.
+There are multiple song-play events per file, so the file will be parsed into a pandas dataframe.
+
+```json
+{
+  "artist": "Infected Mushroom",
+  "auth": "Logged In",
+  "firstName": "Kaylee",
+  "gender": "F",
+  "itemInSession": 6,
+  "lastName": "Summers",
+  "length": 440.2673,
+  "level": "free",
+  "location": "Phoenix-Mesa-Scottsdale, AZ",
+  "method": "PUT",
+  "page": "NextSong",
+  "registration": 1540344794796.0,
+  "sessionId": 139,
+  "song": "Becoming Insane",
+  "status": 200,
+  "ts": 1541107053796,
+  "userAgent": "\"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36\"",
+  "userId": "8"
+}
+```
+
+## File Names
+
+The initial analysis for this project was performed using a local PostgreSQL database and the files
+beginning with `pg_` are the result of the analysis. To use the PostgreSQL files the database must
+be configured with a database name, user and password as they exist in the `pg_dwh.cfg` file.
+
+
+## Project Repository
+
+The project repository is <https://github.com/jlauman/data_engineering_project_03.git>.
+
+Perform `git clone` of the repository into a working folder.
 
 
 ## Set Up Anaconda
 
-Perform git clone of repository first.
+The Anaconda package manager is used in this project.
+Follow the installation instruction at <https://docs.anaconda.com/anaconda/install/>.
+After the `conda` command is available the shell run the following.
 
     conda create --name dend_project_03 python=3.7
     conda activate dend_project_03
@@ -19,15 +103,11 @@ Perform git clone of repository first.
     conda install git
     pip install ipython-sql
 
-Set the Jupyter environment password.
+Also, set the Jupyter notebook password.
 
     jupyter notebook password
 
-Mac OS X packages require for exporting notebook as PDF.
-
-    brew cask install mactex
-
-Add `export PATH="$PATH:/Library/TeX/texbin"` to `~/.bash_profile`.
+Use the `bin/run_jupyter.sh` script to start and verify the Jupyter environment functions.
 
 
 ## Set Up VSCode
@@ -89,50 +169,6 @@ https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
 
 https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-multi-row-inserts.html
 
-
-## Song Data - Dictionary
-
-An example from song file `workspace/song_data/A/A/A/TRAAAAK128F9318786.json`.
-
-```json
-{
-  "artist_id": "AR73AIO1187B9AD57B",
-  "artist_latitude": 37.77916,
-  "artist_location": "San Francisco, CA",
-  "artist_longitude": -122.42005,
-  "artist_name": "Western Addiction",
-  "duration": 118.07302,
-  "num_songs": 1,
-  "song_id": "SOQPWCR12A6D4FB2A3",
-  "title": "A Poor Recipe For Civic Cohesion",
-  "year": 2005
-}
-```
-
-An example of an event record `workspace/log_data/2018/11/2018-11-01-events.json`
-
-```json
-{
-  "artist": "Infected Mushroom",
-  "auth": "Logged In",
-  "firstName": "Kaylee",
-  "gender": "F",
-  "itemInSession": 6,
-  "lastName": "Summers",
-  "length": 440.2673,
-  "level": "free",
-  "location": "Phoenix-Mesa-Scottsdale, AZ",
-  "method": "PUT",
-  "page": "NextSong",
-  "registration": 1540344794796.0,
-  "sessionId": 139,
-  "song": "Becoming Insane",
-  "status": 200,
-  "ts": 1541107053796,
-  "userAgent": "\"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36\"",
-  "userId": "8"
-}
-```
 
 
 
@@ -230,3 +266,20 @@ select f.location, f.level, count(level)
 from f_songplay f
 group by f.location, f.level
 order by f.location, f.level;
+
+
+
+## Copy (Udacity Project) Jupyter Workspace
+
+    zip -r workspace.zip workspace
+    mv workspace.zip workspace_original.zip
+    mv workspace_original.zip workspace
+
+
+## Set Up Tex
+
+Mac OS X packages are required for exporting a notebook as PDF.
+
+    brew cask install mactex
+
+Then add `export PATH="$PATH:/Library/TeX/texbin"` to `~/.bash_profile` and open a new shell.
