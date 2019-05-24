@@ -15,6 +15,8 @@ database technology has been selected.
 ## Design
 
 
+### Process Design
+
 
 ```
 +------------+     +------------+     +------------+
@@ -26,8 +28,12 @@ database technology has been selected.
 +------------+     +------------+     +------------+
 ```
 
+### Database Design (PostgreSQL and AWS Redshift)
 
-## Song Record Example
+
+## Data Examples
+
+### Song Record Example
 
 An example song file is shown below. The example is from file `workspace/song_data/A/A/A/TRAAAAK128F9318786.json`.
 There is one JSON object per song file.
@@ -47,7 +53,7 @@ There is one JSON object per song file.
 }
 ```
 
-# Song-Play Event Record Example
+### Song-Play Event Record Example
 
 An exapmle song-play event record is shown below. The example is from file `workspace/log_data/2018/11/2018-11-01-events.json`.
 There are multiple song-play events per file, so the file will be parsed into a pandas dataframe.
@@ -75,12 +81,6 @@ There are multiple song-play events per file, so the file will be parsed into a 
 }
 ```
 
-## File Names
-
-The initial analysis for this project was performed using a local PostgreSQL database and the files
-beginning with `pg_` are the result of the analysis. To use the PostgreSQL files the database must
-be configured with a database name, user and password as they exist in the `pg_dwh.cfg` file.
-
 
 ## Project Repository
 
@@ -88,8 +88,25 @@ The project repository is <https://github.com/jlauman/data_engineering_project_0
 
 Perform `git clone` of the repository into a working folder.
 
+### File Names
 
-## Set Up Anaconda
+The initial analysis for this project was performed using a local PostgreSQL database and the files
+beginning with `pg_` are the result of the analysis. To use the PostgreSQL files the database must
+be configured with a database name, user and password as they exist in the `pg_dwh.cfg` file.
+
+
+## General Project Set Up
+
+
+### Set Up VSCode
+
+VisualStudio Code has the following plug-ins...
+Anaconda Extension Pack
+Remote Development
+Bookmarks
+
+
+### Set Up Anaconda
 
 The Anaconda package manager is used in this project.
 Follow the installation instruction at <https://docs.anaconda.com/anaconda/install/>.
@@ -110,32 +127,7 @@ Also, set the Jupyter notebook password.
 Use the `bin/run_jupyter.sh` script to start and verify the Jupyter environment functions.
 
 
-## Set Up VSCode
-
-VisualStudio Code has the following plug-ins...
-Anaconda Extension Pack
-Remote Development
-Bookmarks
-
-
-## Set Up PostgreSQL
-
-    bin/docker_pull_all.sh
-    bin/run_postgres.sh
-
-
-## Set Up Amazon S3 Bucket Data
-
-    brew install awscli
-
-https://udacity-dend.s3.amazonaws.com/
-
-    aws s3 sync s3://udacity-dend/song_data ./data/song_data --no-sign-request
-    aws s3 sync s3://udacity-dend/log_data ./data/log_data --no-sign-request
-    aws s3 sync s3://udacity-dend/log_json_path.json ./data/log_json_path.json --no-sign-request
-
-
-## Set Up Name to Gender Data
+### Set Up Name to Gender Data
 
 gender from https://www.ssa.gov/oact/babynames/limits.html
 
@@ -147,12 +139,40 @@ select count(gender) as total from s_songplay_event;
 
 
 
+## Localhost Set Up
+
+### Set Up PostgreSQL
+
+    bin/docker_pull_all.sh
+    bin/run_postgres.sh
+
+
+### Set Up Amazon S3 Bucket Data
+
+    brew install awscli
+
+https://udacity-dend.s3.amazonaws.com/
+
+    aws s3 sync s3://udacity-dend/song_data ./data/song_data --no-sign-request
+    aws s3 sync s3://udacity-dend/log_data ./data/log_data --no-sign-request
+    aws s3 sync s3://udacity-dend/log_json_path.json ./data/log_json_path.json --no-sign-request
+
+
+## Localhost Execution
+
+    python pg_create_tables.py
+    python pg_etl.py
+
+
 ## Run Jupyter Labs
 
-bin/run_jupyter.sh
+    bin/run_jupyter.sh
 
 
-## Amazon EC2 Instance
+## Amazon Web Services (AWS) Set Up
+
+
+## AWS EC2 Instance
 
     sudo yum -y install git
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -163,11 +183,26 @@ Exit shell and ssh into ec2 instance to get clean environment. Ensure that the p
     python --version
 
 
-## Amazon Redshift
+## AWS Redshift
 
 https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
 
 https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-multi-row-inserts.html
+
+
+## AWS Execution
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
