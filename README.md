@@ -190,12 +190,19 @@ https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
 https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-multi-row-inserts.html
 
 
+## AWS Project Configuration
+
+
 ## AWS Execution
 
 
 
 
 
+# Data Quality Checks
+
+udacity-dend/log_data total object paths = 30
+udacity-dend/song_data total object paths = 14896
 
 
 
