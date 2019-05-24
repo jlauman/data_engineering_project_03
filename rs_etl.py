@@ -1,4 +1,4 @@
-import configparser, os, glob, csv, json, hashlib
+import configparser, os, glob, csv, json, hashlib, time
 import pandas as pd
 import psycopg2
 from pprint import pprint
@@ -32,11 +32,21 @@ def load_gender_lookup():
 
 
 def get_object_paths(s3, bucket, prefix):
-    r1 = s3.list_objects(Bucket=DEND_BUCKET, Prefix=prefix)
-    r2 = list(map(lambda obj: obj['Key'], r1['Contents']))
-    r3 = list(filter(lambda str: str.endswith('.json'), r2))
+    # r1 = s3.list_objects(Bucket=DEND_BUCKET, Prefix=prefix)
+    # r2 = list(map(lambda obj: obj['Key'], r1['Contents']))
+    # r3 = list(filter(lambda str: str.endswith('.json'), r2))
     # s3 client does not need to be closed
-    return r3
+    object_paths = []
+    paginator = s3.get_paginator('list_objects')
+    pages = paginator.paginate(Bucket=bucket, Prefix=prefix)
+    for page in pages:
+        # print("len(page['Contents'])=" + str(len(page['Contents'])))
+        r1 = list(map(lambda obj: obj['Key'], page['Contents']))
+        r2 = list(filter(lambda str: str.endswith('.json'), r1))
+        object_paths.extend(r2)
+    print('%s/%s total object paths = %d' % (bucket, prefix, len(object_paths)))
+    time.sleep(2)
+    return object_paths
 
 
 def load_staging_log_data(cur, conn):
@@ -95,7 +105,7 @@ def load_staging_log_data(cur, conn):
         # print(sql)
         # import pdb; pdb.set_trace()
         cur.execute(sql)
-        conn.commit()
+    conn.commit()
 
 
 def load_staging_song_data(cur, conn):
@@ -127,8 +137,9 @@ def load_staging_song_data(cur, conn):
             "),\n")
         sql += str2
         # print(str2)
-        if len(sql) > 4096:
-            print('  4k insert...')
+        # batch inserts at 8k character threshold
+        if len(sql) > 8192:
+            print('  8k insert...')
             sql = ''.join(sql).strip()[:-1] + ';'
             cur.execute(sql)
             conn.commit()
@@ -161,8 +172,8 @@ def main():
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
     cur = conn.cursor()
 
-    # load_gender_lookup()
-    # load_staging_tables(cur, conn)
+    load_gender_lookup()
+    load_staging_tables(cur, conn)
     insert_tables(cur, conn)
 
     conn.close()

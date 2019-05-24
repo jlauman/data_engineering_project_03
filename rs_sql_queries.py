@@ -13,7 +13,7 @@ time_table_drop = "drop table if exists d_time;"
 # songplay_id is always 64 characters (hex digest of sha256 hash)
 staging_events_table_create= ("""
 create table if not exists s_songplay_event (
-    songplay_id varchar(64),
+    songplay_id varchar(64) primary key,
     artist text,
     auth text,
     first_name text,
@@ -38,7 +38,8 @@ create table if not exists s_songplay_event (
     weekday smallint,
     user_agent text,
     user_id text
-);
+)
+diststyle even;
 """)
 
 staging_songs_table_create = ("""
@@ -53,7 +54,8 @@ create table if not exists s_song (
     song_id varchar(18),
     title varchar(256),
     year smallint
-);
+)
+diststyle key distkey (artist_id);
 """)
 
 songplay_table_create = ("""
@@ -67,7 +69,8 @@ create table if not exists f_songplay (
     session_id text,
     location text,
     user_agent text
-);
+)
+diststyle even;
 """)
 
 user_table_create = ("""
@@ -77,7 +80,8 @@ create table if not exists d_user (
     last_name text,
     gender text,
     level text
-);
+)
+diststyle all;
 """)
 
 song_table_create = ("""
@@ -87,7 +91,8 @@ create table if not exists d_song (
     artist_id text,
     year text,
     duration text
-);
+)
+diststyle all;
 -- create index idx_song_title on d_song(title);
 """)
 
@@ -98,8 +103,8 @@ create table if not exists d_artist (
     location text,
     latitude text,
     longitude text
-);
--- create index idx_artist_name on d_artist(name);
+)
+diststyle all;
 """)
 
 time_table_create = ("""
@@ -111,7 +116,8 @@ create table if not exists d_time (
     month text,
     year text,
     weekday text
-);
+)
+diststyle all;
 """)
 
 # STAGING TABLES
