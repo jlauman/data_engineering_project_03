@@ -1,6 +1,10 @@
 
-# Project 03: Data Warehouse
+# Project 03: Local PostgreSQL Data Warehouse
 
+
+This notebook includes data quality checks and example queries against the the Sparkify song-play reporting database.
+
+## Create Database Connection
 
 
 ```python
@@ -35,6 +39,82 @@ print('connection_string=%s' % connection_string)
     'Connected: sparkify@sparkify'
 
 
+
+## Use Record Counts for Data Quality Checks
+
+
+```python
+%%sql 
+select count(*) from s_song;
+```
+
+     * postgresql://sparkify:***@127.0.0.1:5432/sparkify
+    1 rows affected.
+
+
+
+
+
+<table>
+    <tr>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>14896</td>
+    </tr>
+</table>
+
+
+
+
+```python
+%%sql 
+select count(*) from s_songplay_event;
+```
+
+     * postgresql://sparkify:***@127.0.0.1:5432/sparkify
+    1 rows affected.
+
+
+
+
+
+<table>
+    <tr>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>6820</td>
+    </tr>
+</table>
+
+
+
+
+```python
+%%sql
+select count(*) from f_songplay where artist_id is not null and song_id is not null;
+```
+
+     * postgresql://sparkify:***@127.0.0.1:5432/sparkify
+    1 rows affected.
+
+
+
+
+
+<table>
+    <tr>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>611</td>
+    </tr>
+</table>
+
+
+
+## Example Query: What are the `free` and `paid` user counts by location?
 
 
 ```python
@@ -444,18 +524,21 @@ order by f.location, f.level;
 
 
 
+## Example Query: What are the top 10 most played artists?
+
 
 ```python
 %%sql
 -- what are the top 10 most played artists
 select
     row_number() over (order by count(f.artist_id) desc) as rank,
+    count(f.artist_id),
     d1.name as artist_name
 from f_songplay f
 join d_artist d1 on d1.artist_id = f.artist_id
 where f.artist_id is not null
 group by f.artist_id, d1.name
-order by count(f.artist_id) desc
+order by count(f.artist_id) desc, d1.name
 limit 10;
 
 ```
@@ -470,51 +553,64 @@ limit 10;
 <table>
     <tr>
         <th>rank</th>
+        <th>count</th>
         <th>artist_name</th>
     </tr>
     <tr>
         <td>1</td>
+        <td>58</td>
         <td>Coldplay</td>
     </tr>
     <tr>
         <td>2</td>
+        <td>55</td>
         <td>Kings Of Leon</td>
     </tr>
     <tr>
         <td>3</td>
+        <td>38</td>
         <td>Dwight Yoakam</td>
     </tr>
     <tr>
         <td>4</td>
+        <td>36</td>
         <td>The Black Keys</td>
     </tr>
     <tr>
-        <td>5</td>
-        <td>Muse</td>
-    </tr>
-    <tr>
         <td>6</td>
+        <td>35</td>
         <td>Jack Johnson</td>
     </tr>
     <tr>
-        <td>7</td>
-        <td>The Killers</td>
+        <td>5</td>
+        <td>35</td>
+        <td>Muse</td>
     </tr>
     <tr>
         <td>8</td>
+        <td>31</td>
         <td>John Mayer</td>
     </tr>
     <tr>
-        <td>9</td>
-        <td>Radiohead</td>
+        <td>7</td>
+        <td>31</td>
+        <td>The Killers</td>
     </tr>
     <tr>
         <td>10</td>
+        <td>30</td>
         <td>Alliance Ethnik</td>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td>30</td>
+        <td>OneRepublic</td>
     </tr>
 </table>
 
 
+
+## Example Query: What are the top 10 most played artists by gender?
 
 
 ```python
@@ -551,8 +647,8 @@ male_top10_artists as (
 )
 select F.rank, F.name as female, M.name as male
 from female_top10_artists as F
-join male_top10_artists as M on F.rank = M.rank;
-
+join male_top10_artists as M on F.rank = M.rank
+order by rank;
 ```
 
      * postgresql://sparkify:***@127.0.0.1:5432/sparkify
@@ -621,6 +717,8 @@ join male_top10_artists as M on F.rank = M.rank;
 </table>
 
 
+
+## Example Query: Where are most Colplay song plays occuring?
 
 
 ```python
@@ -691,6 +789,8 @@ limit 10;
 </table>
 
 
+
+## Example Query: Where are most Kings Of Leon song plays occuring?
 
 
 ```python

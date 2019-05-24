@@ -12,26 +12,36 @@ To support the anticipated future scale of this reporting solution the AWS RedSh
 database technology has been selected.
 
 
-## Design
+## Project Repository
+
+The project repository is <https://github.com/jlauman/data_engineering_project_03.git>.
+
+Perform `git clone` of the repository into a working folder.
+
+The initial analysis for this project was performed using a local PostgreSQL database and the files
+beginning with `pg_` are the result of that analysis. To use the PostgreSQL files the database must
+be configured with a database name, user and password as they exist in the `pg_dwh.cfg` file.
+
+The final solution of this project was executed on an AWS EC2 instance and in a Redshift cluster.
+The files for AWS EC2/Redshift are prefixed with `rs_`.
 
 
-### Process Design
+## Jupyter Notebooks with Example Queries
 
+For reference both the PostgreSQL prototype and the AWS Redshift solution notebooks are included.
+Each notebook has data quality checks and example queries. Exports from each notebook are provided below.
 
-```
-+------------+     +------------+     +------------+
-|            |     |            |     |            |
-|            |     |  EC2 VM    |     |  RedShift  |
-| S3 Buckets +---->+  for ETL   +---->+  Database  |
-|            |     |            |     |            |
-|            |     |            |     |            |
-+------------+     +------------+     +------------+
-```
+Redshift solution example queries are in [rs_example_queries.md](./rs_example_queries.md).
 
-### Database Design (PostgreSQL and AWS Redshift)
+PostgreSQL prototype example queries are in [pg_example_queries.md](./pg_example_queries.md).
 
 
 ## Data Examples
+
+A single song record and a single song-play event record are included here for reference.
+Note that in the S3 bucket there is one song per S3 object and multiple song-play events
+per S3 object.
+
 
 ### Song Record Example
 
@@ -82,33 +92,98 @@ There are multiple song-play events per file, so the file will be parsed into a 
 ```
 
 
-## Project Repository
+## Design
 
-The project repository is <https://github.com/jlauman/data_engineering_project_03.git>.
+The design of this ETL process is illustrated in the diagram shown below.
 
-Perform `git clone` of the repository into a working folder.
 
-### File Names
+```
++------------+     +------------+     +------------+
+|            |     |            |     |            |
+|            |     |  EC2 VM    |     |  RedShift  |
+| S3 Buckets +---->+  for ETL   +---->+  Database  |
+|            |     |            |     |            |
+|            |     |            |     |            |
++------------+     +------------+     +------------+
+```
 
-The initial analysis for this project was performed using a local PostgreSQL database and the files
-beginning with `pg_` are the result of the analysis. To use the PostgreSQL files the database must
-be configured with a database name, user and password as they exist in the `pg_dwh.cfg` file.
+The first step of the ETL pipeline copies and transformed song records and song-play event
+records from S3 bucket objects into staging tables in AWS Redshift. After song records are
+read, transformed and populated into an `s_song` staging table they will persist in the Redshift
+database for the lifetime of the Sparkify reporting database. The expectation is that there
+will be frequent small updates to the song records and the bulk of the load for song will
+occur once. This is the same expecation for the song-play events - frequent small updates.
+
+Based on these expectations the design is built around an ETL server that is capable of streaming
+song records and song-play event records into the staging tables.
+
+NOTE: What is missing from the staging tables is a flag to indicate that the staged record has already
+been processed into either the dimension or fact tables. For long-term operation of the ETL server
+this flag needs to be added to the `s_*` tables and existing records flagged as `true`.
+
+
+### Database Design (AWS Redshift and PostgreSQL)
+
+As part of the data investigation page of this project a prototype data warehouse was built using
+PostgreSQL. The final project was executed in AWS Redshift and only the details for Redshift
+are included here.
+
+The naming convention for the reporting tables are:
+
+* `d_` prefix for dimension tables
+* `f_` prefix for fact tables
+* `s_` prefix for staging tables
+
+The database design exists of the following tables:
+
+* `d_artist`: artist dimension table
+* `d_song`: song dimension table
+* `d_time` time dimension table
+* `d_user`: Sparkify user dimension table
+* `f_songplay`: Song-play fact table
+* `s_song`: Song staging table
+* `s_songplay_event`: Song-play event staging table
+
+For AWS Redshift, the dimension tables use the `all` distribution method across slices. This is
+an initial design decision and it may be determined that the `d_time` dimension table needs to be
+distributed by the `start_time` key as it grows. The initial data management plan is to retain the
+staging tables, so the staged records may be replayed into dimension and fact tables if the database
+schema changes.
+
+See the following documentation for a discussion on Redshift inserts.
+https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-multi-row-inserts.html
+
+One of the architectural differences between Redshift and PostgreSQL is how serial columns are incremented.
+Find a discussion of this in the following documentation. https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
+
+Rather than using serial/incremented numbers as song-play event identifiers a hashing mechanism is used.
+See line 82 of `rs_etl.py` for the implementation.
 
 
 ## General Project Set Up
 
+After cloning the git repository use the following section to set up the solution.
 
-### Set Up VSCode
+For the Redshift solution perform the `git clone` and general set up steps on an EC2 instance in the same
+VPC security group as the Redshift cluster. See the `AWS EC2 Instance` instructions below.
 
-VisualStudio Code has the following plug-ins...
-Anaconda Extension Pack
-Remote Development
-Bookmarks
+
+### Set Up Visual Studio Code
+
+For this solution `Visual Studio Code - Insiders` was used to take advantage of the `Remote Development`
+extension. When the `Remote Development` extension is available for stable `Visual Studio Code` then
+`Visual Studio Code` should be preferred.
+
+Several `Visual Studio Code` extensions were configured for this solution.
+
+* Remote Development
+* Anaconda Extension Pack
+* Bookmarks
 
 
 ### Set Up Anaconda
 
-The Anaconda package manager is used in this project.
+The Anaconda package manager is used in this solution.
 Follow the installation instruction at <https://docs.anaconda.com/anaconda/install/>.
 After the `conda` command is available the shell run the following.
 
@@ -129,198 +204,139 @@ Use the `bin/run_jupyter.sh` script to start and verify the Jupyter environment 
 
 ### Set Up Name to Gender Data
 
-gender from https://www.ssa.gov/oact/babynames/limits.html
+Name and gender data was not provided as part of the S3 data. To complete the solution as
+described gender information from [babynames](https://www.ssa.gov/oact/babynames/limits.html)
+has been included in this project.
+
+To set up the names perform the following:
 
     mkdir -p data/names
     unzip names.zip -d data/names
 
-select gender, count(gender) from s_songplay_event group by gender;
-select count(gender) as total from s_songplay_event;
+
+NOTE: After the staging table are populated the following queries may be used to examine
+the breakdown of genders in the song-play events.
+
+    select gender, count(gender) from s_songplay_event group by gender;
+
+    select count(gender) as total from s_songplay_event;
 
 
+## Amazon Web Services (AWS) Set Up
 
-## Localhost Set Up
+Amazon Web Services is the primary technology platform for this solution. Instructions for set up
+and execution of the PostgreSQL prototype are included at the end of this document.
 
-### Set Up PostgreSQL
+
+### AWS Redshift Cluster
+
+Follow the normal Redshift cluster creation documentation available on AWS with the addition of using
+an `Elastic IP` for the publically exposed IP address. This change helps with diagnosing
+configuration problems. Also, ensure that port 5439 is open on the VPC Security Group that is assigned
+to the cluster. With this configuration the Redshift cluster may accessed using a normal desktop
+database client (like DbVisualizer).
+
+
+### AWS EC2 Instance
+
+Create an EC2 VM instance to be the ETL server for this solution. Run the following commands to
+install the base packages required for this solution.
+
+    sudo yum -y install git postgresql
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
+
+Exit shell and then `ssh` into the  EC2 instance to get clean environment. Ensure that the python version is 3.7.x.
+
+    python --version
+
+
+### AWS Project Configuration
+
+Change the contents of the `rs_dwh.cfg` file to match the IP address of the cluster leader node. Also, change
+the database name, username and password to match the configuration of the Redshift cluster.
+
+Use the following command as a template to test the connection from the EC2 VM to the Redshift cluster.
+
+    psql --host=172.31.9.254 --port=5439 --user=sparkify --dbname=sparkify
+
+The S3 buckets containing song and song-play event records is accessible without authentication. See the
+`boto3` client configuration on line 62 of `rs_etl.py`.
+
+
+### AWS Execution
+
+First, ensure the anaconda environment is `dend_project_03`.
+
+To execute the ETL process, run the following commands:
+
+    python rs_create_tables.py
+    python rs_etl.py
+
+After the ETL script executes the dimension and fact tables will be populated.
+
+
+### AWS Run Jupyter Labs
+
+In order to run and connect to a Jupyter notebook running on the EC2 VM a port must be opened
+(which is not secure without SSL) or a port must be forwarded from the local box.
+
+For this solution, `Visual Studio Code - Insider` as used to forward port 8888 to the EC2 VM.
+
+
+## Local Set Up
+
+The following instructions are for the PostgreSQL prototype set up.
+
+
+### Local PostgreSQL Set Up
+
+The local PostgreSQL prototype set up requires Docker.
+Ensure that Docker CE is running and then run the following:
 
     bin/docker_pull_all.sh
     bin/run_postgres.sh
 
 
-### Set Up Amazon S3 Bucket Data
+### Local Download of S3 Bucket Data
+
+The local PostgreSQL prototype uses local data files. Install the AWS command line interface (cli)
+tool for the local operating system.
+
+On a Mac OS X/macOS box with homebrew installed do the following:
 
     brew install awscli
 
-https://udacity-dend.s3.amazonaws.com/
+The URL for the S3 bucket data is: https://udacity-dend.s3.amazonaws.com/
+
+Run the following command to download the S3 bucket data.
 
     aws s3 sync s3://udacity-dend/song_data ./data/song_data --no-sign-request
     aws s3 sync s3://udacity-dend/log_data ./data/log_data --no-sign-request
     aws s3 sync s3://udacity-dend/log_json_path.json ./data/log_json_path.json --no-sign-request
 
 
-## Localhost Execution
+### Local Execution
 
     python pg_create_tables.py
     python pg_etl.py
 
 
-## Run Jupyter Labs
+### Run Jupyter Labs
 
     bin/run_jupyter.sh
 
 
-## Amazon Web Services (AWS) Set Up
-
-
-## AWS EC2 Instance
-
-    sudo yum -y install git
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    bash Miniconda3-latest-Linux-x86_64.sh
-
-Exit shell and ssh into ec2 instance to get clean environment. Ensure that the python version is 3.7.x.
-
-    python --version
-
-
-## AWS Redshift
-
-https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
-
-https://docs.aws.amazon.com/redshift/latest/dg/c_best-practices-multi-row-inserts.html
-
-
-## AWS Project Configuration
-
-
-## AWS Execution
-
-
-
-
-
-# Data Quality Checks
-
-udacity-dend/log_data total object paths = 30
-udacity-dend/song_data total object paths = 14896
-
-
-
-
-
-
-
-
-
-
-
-only 7 distinct minutes in songplay events
-minute
-1
-5
-2
-4
-0
-6
-3
-
-
-
-
-
--- what date range is in songplay data
-select min(start_time), max(start_time)
-from f_songplay f;
-
-
-
--- what are the top 10 most played artists
-select
-    row_number() over (order by count(f.artist_id) desc) as rank,
-    d1.name as artist_name
-from f_songplay f
-join d_artist d1 on d1.artist_id = f.artist_id
-where f.artist_id is not null
-group by f.artist_id, d1.name
-order by count(f.artist_id) desc
-limit 10;
-
-
-
--- what are the top 10 most played artists by gender
-with
-female_top10_artists as (
-    select
-        row_number() over (order by count(f.artist_id) desc, d1.gender, d2.name) as rank,
-        d1.gender,
-        d2.name
-    from f_songplay f
-    join d_user d1 on d1.user_id = f.user_id
-    join d_artist d2 on d2.artist_id = f.artist_id
-    where f.artist_id is not null
-    and d1.gender = 'F'
-    group by d1.gender, d2.name
-    order by count(f.artist_id) desc, d1.gender, d2.name
-    limit 10
-),
-male_top10_artists as (
-    select
-        row_number() over (order by count(f.artist_id) desc, d1.gender, d2.name) as rank,
-        d1.gender,
-        d2.name
-    from f_songplay f
-    join d_user d1 on d1.user_id = f.user_id
-    join d_artist d2 on d2.artist_id = f.artist_id
-    where f.artist_id is not null
-    and d1.gender = 'M'
-    group by d1.gender, d2.name
-    order by count(f.artist_id) desc, d1.gender, d2.name
-    limit 10
-)
-select F.rank, F.name as female, M.name as male
-from female_top10_artists as F
-join male_top10_artists as M on F.rank = M.rank;
-
-
-
--- where are most Colplay song plays occuring?
-select count(f.location), f.location
-from f_songplay f
-join d_artist d1 on d1.artist_id = f.artist_id
-where d1.name = 'Coldplay'
-group by f.location
-order by count(f.location) desc;
-
-
-
--- where are most Kings of Leon song plays occuring?
-select count(f.location), f.location
-from f_songplay f
-join d_artist d1 on d1.artist_id = f.artist_id
-where d1.name = 'Kings Of Leon'
-group by f.location
-order by count(f.location) desc;
-
-
-
--- what are the free and paid user counts by location?
-select f.location, f.level, count(level)
-from f_songplay f
-group by f.location, f.level
-order by f.location, f.level;
-
-
-
-## Copy (Udacity Project) Jupyter Workspace
+## Extra: Copy Project's Jupyter Workspace
 
     zip -r workspace.zip workspace
     mv workspace.zip workspace_original.zip
     mv workspace_original.zip workspace
 
 
-## Set Up Tex
+## Extra: Set Up Tex on Mac OS X/macOS
 
-Mac OS X packages are required for exporting a notebook as PDF.
+Mac OS X/macOS packages are required for exporting a notebook as PDF.
 
     brew cask install mactex
 

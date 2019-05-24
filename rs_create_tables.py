@@ -4,6 +4,9 @@ from rs_sql_queries import create_table_queries, drop_table_queries
 
 
 def drop_tables(cur, conn):
+    """Drop sparkify database tables.
+    Iterate through query list to drop tables.
+    """
     for query in drop_table_queries:
         print("drop_tables={}".format(query))
         cur.execute(query)
@@ -11,6 +14,9 @@ def drop_tables(cur, conn):
 
 
 def create_tables(cur, conn):
+    """Create sparkify database tables.
+    Iterate through query list to create tables.
+    """
     for query in create_table_queries:
         print("create_tables={}".format(query))
         cur.execute(query)
@@ -18,6 +24,8 @@ def create_tables(cur, conn):
 
 
 def main():
+    """Create sparkify database tables in Redshift.
+    """
     config = configparser.ConfigParser()
     config.read('rs_dwh.cfg')
 

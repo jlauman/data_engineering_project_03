@@ -17,6 +17,8 @@ NAME_TO_GENDER = {}
 
 
 def load_gender_lookup():
+    """Load lookup dictionary to find gender given a name.
+    """
     base_path = os.getcwd() + '/data/names'
     for root, dirs, files in os.walk(base_path):
         file_paths = glob.glob(os.path.join(root,'*.txt'))
@@ -32,6 +34,9 @@ def load_gender_lookup():
 
 
 def get_object_paths(s3, bucket, prefix):
+    """List objects in S3 bucket with given prefix.
+    Uses paginator to ensure a complete list of object paths is returned.
+    """
     # r1 = s3.list_objects(Bucket=DEND_BUCKET, Prefix=prefix)
     # r2 = list(map(lambda obj: obj['Key'], r1['Contents']))
     # r3 = list(filter(lambda str: str.endswith('.json'), r2))
@@ -50,6 +55,8 @@ def get_object_paths(s3, bucket, prefix):
 
 
 def load_staging_log_data(cur, conn):
+    """Load song-play event records into s_songplay_event table.
+    """
     # import pdb; pdb.set_trace()
     # load log_data (events) into s_event table
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
@@ -109,7 +116,8 @@ def load_staging_log_data(cur, conn):
 
 
 def load_staging_song_data(cur, conn):
-    # load songs into s_song table
+    """Load song records into s_song staging table.
+    """
     sql = str(staging_songs_insert)
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
     file_paths = get_object_paths(s3, DEND_BUCKET, 'song_data')
@@ -158,6 +166,9 @@ def load_staging_tables(cur, conn):
 
 
 def insert_tables(cur, conn):
+    """Populate staging, dimension and fact tables.
+    The fact table must be the last item in the query list.
+    """
     for query in insert_table_queries:
         if query.strip() != "":
             pprint(query)
@@ -166,6 +177,8 @@ def insert_tables(cur, conn):
 
 
 def main():
+    """Run Redshift ETL for staging, dimension and fact tables.
+    """
     config = configparser.ConfigParser()
     config.read('rs_dwh.cfg')
 

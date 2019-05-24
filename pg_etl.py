@@ -11,6 +11,8 @@ NAME_TO_GENDER = {}
 
 
 def load_gender_lookup():
+    """Load lookup dictionary with names.
+    """
     base_path = os.getcwd() + '/data/names'
     for root, dirs, files in os.walk(base_path):
         file_paths = glob.glob(os.path.join(root,'*.txt'))
@@ -26,7 +28,10 @@ def load_gender_lookup():
 
 
 def load_staging_log_data(cur):
-    # load log_data (events) into s_event table
+    """Load s_event staging table from log_data.
+    The ./data/log_data folder must be populated with event files.
+    Each event file contains multiple JSON records so a pandas dataframe is used.
+    """
     base_path = os.getcwd() + '/data/log_data'
     for root, dirs, files in os.walk(base_path):
         file_paths = glob.glob(os.path.join(root,'*.json'))
@@ -76,6 +81,10 @@ def load_staging_log_data(cur):
 
 
 def load_staging_song_data(cur):
+    """Load the s_song staging table from data/song_data files.
+    The data/song_data folder must be populated with song files.
+    Each file contains a single JSON object so json.load is used.
+    """
     # load songs into s_song table
     base_path = os.getcwd() + '/data/song_data'
     for root, dirs, files in os.walk(base_path):
@@ -110,6 +119,10 @@ def load_staging_tables(cur, conn):
 
 
 def insert_tables(cur, conn):
+    """Populate fact and dimension tables.
+    Iterate through queries to insert into d_ and f_ tables.
+    Note: fact table insert must be last in list.
+    """
     for query in insert_table_queries:
         if query.strip() != "":
             pprint(query)
@@ -118,6 +131,8 @@ def insert_tables(cur, conn):
 
 
 def main():
+    """Run PostgreSQL ETL process for staging, dimension and fact tables.
+    """
     config = configparser.ConfigParser()
     config.read('pg_dwh.cfg')
 
