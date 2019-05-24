@@ -1,6 +1,10 @@
 
-# Project 03: Data Warehouse
+# Project 03: AWS Redshift Data Warehouse
 
+
+This notebook includes data quality checks and example queries against the the Sparkify song-play reporting database.
+
+## Create Database Connection
 
 
 ```python
@@ -26,7 +30,7 @@ print('connection_string=%s' % connection_string)
 %sql $connection_string
 ```
 
-    connection_string=postgresql://sparkify:aEe8c38U6;7MtNPG@172.31.5.253:5439/sparkify
+    connection_string=postgresql://sparkify:aEe8c38U67MtNPG@172.31.9.254:5439/sparkify
 
 
 
@@ -35,6 +39,82 @@ print('connection_string=%s' % connection_string)
     'Connected: sparkify@sparkify'
 
 
+
+## Use Record Counts for Data Quality Checks
+
+
+```python
+%%sql 
+select count(*) from s_song;
+```
+
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
+    1 rows affected.
+
+
+
+
+
+<table>
+    <tr>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>14896</td>
+    </tr>
+</table>
+
+
+
+
+```python
+%%sql 
+select count(*) from s_songplay_event;
+```
+
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
+    1 rows affected.
+
+
+
+
+
+<table>
+    <tr>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>6820</td>
+    </tr>
+</table>
+
+
+
+
+```python
+%%sql
+select count(*) from f_songplay where artist_id is not null and song_id is not null;
+```
+
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
+    1 rows affected.
+
+
+
+
+
+<table>
+    <tr>
+        <th>count</th>
+    </tr>
+    <tr>
+        <td>638</td>
+    </tr>
+</table>
+
+
+
+## Example Query: What are the `free` and `paid` user counts by location?
 
 
 ```python
@@ -47,7 +127,7 @@ order by f.location, f.level;
 
 ```
 
-     * postgresql://sparkify:***@172.31.5.253:5439/sparkify
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
     76 rows affected.
 
 
@@ -444,23 +524,26 @@ order by f.location, f.level;
 
 
 
+## Example Query: What are the top 10 most played artists?
+
 
 ```python
 %%sql
 -- what are the top 10 most played artists
 select
     row_number() over (order by count(f.artist_id) desc) as rank,
+    count(f.artist_id),
     d1.name as artist_name
 from f_songplay f
 join d_artist d1 on d1.artist_id = f.artist_id
 where f.artist_id is not null
 group by f.artist_id, d1.name
-order by count(f.artist_id) desc
+order by count(f.artist_id) desc, d1.name
 limit 10;
 
 ```
 
-     * postgresql://sparkify:***@172.31.5.253:5439/sparkify
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
     10 rows affected.
 
 
@@ -470,51 +553,64 @@ limit 10;
 <table>
     <tr>
         <th>rank</th>
+        <th>count</th>
         <th>artist_name</th>
     </tr>
     <tr>
         <td>1</td>
-        <td>Kings Of Leon</td>
+        <td>58</td>
+        <td>Coldplay</td>
     </tr>
     <tr>
         <td>2</td>
-        <td>Foo Fighters</td>
+        <td>55</td>
+        <td>Kings Of Leon</td>
     </tr>
     <tr>
         <td>3</td>
-        <td>Lily Allen</td>
+        <td>38</td>
+        <td>Dwight Yoakam</td>
     </tr>
     <tr>
         <td>4</td>
-        <td>Rise Against</td>
+        <td>36</td>
+        <td>The Black Keys</td>
     </tr>
     <tr>
         <td>5</td>
-        <td>Black Eyed Peas</td>
+        <td>35</td>
+        <td>Jack Johnson</td>
     </tr>
     <tr>
         <td>6</td>
-        <td>Shakira</td>
+        <td>35</td>
+        <td>Muse</td>
     </tr>
     <tr>
         <td>7</td>
-        <td>Pearl Jam</td>
+        <td>31</td>
+        <td>John Mayer</td>
     </tr>
     <tr>
         <td>8</td>
-        <td>Van Halen</td>
+        <td>31</td>
+        <td>The Killers</td>
+    </tr>
+    <tr>
+        <td>11</td>
+        <td>30</td>
+        <td>Alliance Ethnik</td>
     </tr>
     <tr>
         <td>9</td>
-        <td>Weezer</td>
-    </tr>
-    <tr>
-        <td>10</td>
-        <td>The Smiths</td>
+        <td>30</td>
+        <td>OneRepublic</td>
     </tr>
 </table>
 
 
+
+## Example Query: What are the top 10 most played artists by gender?
 
 
 ```python
@@ -551,11 +647,12 @@ male_top10_artists as (
 )
 select F.rank, F.name as female, M.name as male
 from female_top10_artists as F
-join male_top10_artists as M on F.rank = M.rank;
+join male_top10_artists as M on F.rank = M.rank
+order by rank;
 
 ```
 
-     * postgresql://sparkify:***@172.31.5.253:5439/sparkify
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
     10 rows affected.
 
 
@@ -569,58 +666,60 @@ join male_top10_artists as M on F.rank = M.rank;
         <th>male</th>
     </tr>
     <tr>
-        <td>6</td>
-        <td>Rise Against</td>
-        <td>Pearl Jam</td>
-    </tr>
-    <tr>
-        <td>7</td>
-        <td>Shakira</td>
-        <td>Shakira</td>
-    </tr>
-    <tr>
-        <td>9</td>
-        <td>Kid Cudi</td>
-        <td>Van Halen</td>
-    </tr>
-    <tr>
-        <td>3</td>
-        <td>Black Eyed Peas</td>
-        <td>Lily Allen</td>
+        <td>1</td>
+        <td>Kings Of Leon</td>
+        <td>Coldplay</td>
     </tr>
     <tr>
         <td>2</td>
-        <td>Lily Allen</td>
-        <td>Foo Fighters</td>
+        <td>Coldplay</td>
+        <td>Kings Of Leon</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Jack Johnson</td>
+        <td>Dwight Yoakam</td>
     </tr>
     <tr>
         <td>4</td>
-        <td>Foo Fighters</td>
-        <td>Rise Against</td>
+        <td>OneRepublic</td>
+        <td>Muse</td>
     </tr>
     <tr>
         <td>5</td>
-        <td>Weezer</td>
-        <td>Black Eyed Peas</td>
+        <td>The Black Keys</td>
+        <td>Metallica</td>
     </tr>
     <tr>
-        <td>10</td>
-        <td>Lupe Fiasco</td>
-        <td>Calle 13</td>
+        <td>6</td>
+        <td>Dwight Yoakam</td>
+        <td>The Black Keys</td>
     </tr>
     <tr>
-        <td>1</td>
-        <td>Kings Of Leon</td>
-        <td>Kings Of Leon</td>
+        <td>7</td>
+        <td>Kanye West</td>
+        <td>John Mayer</td>
     </tr>
     <tr>
         <td>8</td>
-        <td>Shakira Featuring Wyclef Jean</td>
-        <td>Shakira Featuring Wyclef Jean</td>
+        <td>Alliance Ethnik</td>
+        <td>Jack Johnson</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Linkin Park</td>
+        <td>Radiohead</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td>The Killers</td>
+        <td>The Killers</td>
     </tr>
 </table>
 
 
+
+## Exapmle Query: Where are most Colplay song plays occuring?
 
 
 ```python
@@ -636,8 +735,8 @@ limit 10;
 
 ```
 
-     * postgresql://sparkify:***@172.31.5.253:5439/sparkify
-    0 rows affected.
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
+    10 rows affected.
 
 
 
@@ -648,9 +747,51 @@ limit 10;
         <th>count</th>
         <th>location</th>
     </tr>
+    <tr>
+        <td>10</td>
+        <td>Lansing-East Lansing, MI</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>San Francisco-Oakland-Hayward, CA</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Lake Havasu City-Kingman, AZ</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Augusta-Richmond County, GA-SC</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Portland-South Portland, ME</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Chicago-Naperville-Elgin, IL-IN-WI</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Nashville-Davidson--Murfreesboro--Franklin, TN</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Janesville-Beloit, WI</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Atlanta-Sandy Springs-Roswell, GA</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Yuba City, CA</td>
+    </tr>
 </table>
 
 
+
+## Example Query: Where are most Kings Of Leon song plays occuring?
 
 
 ```python
@@ -665,7 +806,7 @@ order by count(f.location) desc
 limit 10;
 ```
 
-     * postgresql://sparkify:***@172.31.5.253:5439/sparkify
+     * postgresql://sparkify:***@172.31.9.254:5439/sparkify
     10 rows affected.
 
 
@@ -703,11 +844,11 @@ limit 10;
     </tr>
     <tr>
         <td>3</td>
-        <td>Lake Havasu City-Kingman, AZ</td>
+        <td>Portland-South Portland, ME</td>
     </tr>
     <tr>
         <td>3</td>
-        <td>Portland-South Portland, ME</td>
+        <td>Lake Havasu City-Kingman, AZ</td>
     </tr>
     <tr>
         <td>2</td>
