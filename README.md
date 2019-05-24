@@ -65,8 +65,8 @@ There is one JSON object per song file.
 
 ### Song-Play Event Record Example
 
-An exapmle song-play event record is shown below. The example is from file `workspace/log_data/2018/11/2018-11-01-events.json`.
-There are multiple song-play events per file, so the file will be parsed into a pandas dataframe.
+An example song-play event record is shown below. The example is from file `workspace/log_data/2018/11/2018-11-01-events.json`.
+There are multiple song-play events per file, so the file will be parsed into a pandas data frame.
 
 ```json
 {
@@ -112,7 +112,7 @@ records from S3 bucket objects into staging tables in AWS Redshift. After song r
 read, transformed and populated into an `s_song` staging table they will persist in the Redshift
 database for the lifetime of the Sparkify reporting database. The expectation is that there
 will be frequent small updates to the song records and the bulk of the load for song will
-occur once. This is the same expecation for the song-play events - frequent small updates.
+occur once. This is the same expectation for the song-play events - frequent small updates.
 
 Based on these expectations the design is built around an ETL server that is capable of streaming
 song records and song-play event records into the staging tables.
@@ -231,7 +231,7 @@ and execution of the PostgreSQL prototype are included at the end of this docume
 ### AWS Redshift Cluster
 
 Follow the normal Redshift cluster creation documentation available on AWS with the addition of using
-an `Elastic IP` for the publically exposed IP address. This change helps with diagnosing
+an `Elastic IP` for the publicly exposed IP address. This change helps with diagnosing
 configuration problems. Also, ensure that port 5439 is open on the VPC Security Group that is assigned
 to the cluster. With this configuration the Redshift cluster may accessed using a normal desktop
 database client (like DbVisualizer).
